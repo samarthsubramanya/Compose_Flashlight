@@ -3,6 +3,7 @@ package com.thingsenz.flashlight
 import android.Manifest
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraManager
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
@@ -10,11 +11,13 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -23,7 +26,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -35,17 +37,18 @@ import androidx.compose.material.IconButton
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.OutlinedButton
 import androidx.compose.material.Scaffold
+import androidx.compose.material.Slider
+import androidx.compose.material.SliderDefaults
 import androidx.compose.material.Surface
-import androidx.compose.material.Switch
 import androidx.compose.material.Text
 import androidx.compose.material.TextButton
 import androidx.compose.material.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalUriHandler
@@ -60,46 +63,45 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withLink
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.core.app.ActivityCompat
 import com.thingsenz.flashlight.ui.theme.FlashlightTheme
+import kotlin.math.max
+import kotlin.math.roundToInt
 
 class MainActivity : ComponentActivity() {
 
     private var cameraManager: CameraManager? = null
     private var sosThread: Thread? = null
     private var sosInterrupt = true
-    private var isFlashlightEnabled = mutableStateOf(false)
+    private val isFlashlightEnabled = mutableStateOf(false)
     private var sosColor = mutableStateOf(Color.Red)
-    private var openPermDialog = mutableStateOf(false)
-    private var openInfoDialog = mutableStateOf(false)
-    private var msgType = mutableIntStateOf(0)
+    private val openPermDialog = mutableStateOf(false)
+    private val openInfoDialog = mutableStateOf(false)
+    private val msgType = mutableIntStateOf(0)
     private var cameraId = ""
     private var flashMode = false
     private var hasFlash = true
     private val enabledColor = Color(0xff6dd288)
+    private val supportedFlashlightLevel = mutableIntStateOf(1)
+    private val initialFlashlightLevel = mutableIntStateOf(1)
 
-    private val cameraPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
-        if (it) {
-            initCamera()
-        } else {
-            if (ActivityCompat.shouldShowRequestPermissionRationale(this,Manifest.permission.CAMERA)) {
-                msgType.intValue=0
-            } else {
-                msgType.intValue=1
-            }
-            openPermDialog.value=true
-        }
-    }
+
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         initCamera()
         enableEdgeToEdge()
         setContent {
+            val currentFlashlightLevel = remember { mutableIntStateOf(
+                initialFlashlightLevel.intValue
+            ) }
+            val interactionSource = remember {
+                MutableInteractionSource()
+            }
             FlashlightTheme {
                 // A surface container using the 'background' color from the theme
                 Scaffold(
@@ -149,7 +151,7 @@ class MainActivity : ComponentActivity() {
                             Image(
                                 painter = painterResource(if (isFlashlightEnabled.value) R.drawable.ic_torch_on else R.drawable.ic_torch_off),
                                 contentDescription = "turn-on",
-                                modifier = Modifier.size(60.dp, 60.dp).clickable {
+                                modifier = Modifier.size(80.dp, 80.dp).clickable(indication = null, interactionSource = interactionSource) {
                                     try {
                                         if (!sosInterrupt) {
                                             sosMode()
@@ -167,6 +169,28 @@ class MainActivity : ComponentActivity() {
                                 colorFilter = ColorFilter.tint(if (isFlashlightEnabled.value) enabledColor else Color.Red)
                             )
 
+                            if (supportedFlashlightLevel.intValue > 1 && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && isFlashlightEnabled.value) {
+                                Slider(
+                                    value = currentFlashlightLevel.intValue.toFloat(),
+                                    onValueChange = {
+                                        val x = it.roundToInt()
+                                        if (currentFlashlightLevel.intValue != x) {
+                                            currentFlashlightLevel.intValue = x
+                                            setFlashlightLevel(
+                                                x
+                                            )
+                                            Log.d("TAGX",it.toString())
+                                        }
+                                    },
+                                    valueRange = 1f..supportedFlashlightLevel.intValue.toFloat(),
+                                    steps = max(1,supportedFlashlightLevel.intValue-2) ,
+                                    colors = SliderDefaults.colors(
+                                        activeTrackColor = MaterialTheme.colors.secondary,
+                                    ),
+                                    modifier = Modifier.padding(horizontal = 20.dp)
+                                )
+                            }
+
                             OutlinedButton(
                                 onClick = {
                                     try {
@@ -177,7 +201,7 @@ class MainActivity : ComponentActivity() {
                                 },
                                 modifier = Modifier.size(100.dp),
                                 shape = CircleShape,
-                                border = BorderStroke(1.dp, sosColor.value)
+                                border = BorderStroke(5.dp, sosColor.value)
                             ) {
                                 Text(
                                     text = "SOS",
@@ -207,7 +231,32 @@ class MainActivity : ComponentActivity() {
             hasFlash=false
             Toast.makeText(this,"Selected Camera does not support Flash",Toast.LENGTH_SHORT).show()
         }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && c.get(CameraCharacteristics.FLASH_INFO_STRENGTH_MAXIMUM_LEVEL).let { it!=null && it>1  }) {
+            supportedFlashlightLevel.intValue = c.get(CameraCharacteristics.FLASH_INFO_STRENGTH_MAXIMUM_LEVEL)?.toInt() ?: 1
+            initialFlashlightLevel.intValue = cameraManager!!.getTorchStrengthLevel(cameraId)
+        }
     }
+
+    private val cameraPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
+        if (it) {
+            initCamera()
+        } else {
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this,Manifest.permission.CAMERA)) {
+                msgType.intValue=0
+            } else {
+                msgType.intValue=1
+            }
+            openPermDialog.value=true
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+    private fun setFlashlightLevel(level: Int) {
+        if (cameraManager == null)
+            cameraManager = getSystemService(CameraManager::class.java)
+        cameraManager?.turnOnTorchWithStrengthLevel(cameraId,level)
+    }
+
 
     @Synchronized
     private fun toggleFlash() {
@@ -217,11 +266,6 @@ class MainActivity : ComponentActivity() {
             }
         isFlashlightEnabled.value = !isFlashlightEnabled.value
         cameraManager?.setTorchMode(cameraId, isFlashlightEnabled.value)
-    }
-
-    override fun onBackPressed() {
-        super.onBackPressed()
-        finish()
     }
 
     override fun finish() {
