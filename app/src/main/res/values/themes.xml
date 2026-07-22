@@ -1,7 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.Flashlight" parent="android:Theme.Material.Light.NoActionBar">
-        <item name="android:windowFullscreen">true</item>
+    <style name="Theme.Flashlight" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/void_black</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <item name="postSplashScreenTheme">@style/Theme.Flashlight.Main</item>
+    </style>
+
+    <style name="Theme.Flashlight.Main" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/void_black</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowFullscreen">false</item>
     </style>
 </resources>
