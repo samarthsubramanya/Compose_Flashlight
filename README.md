@@ -9,21 +9,34 @@ demonstrating Jetpack Compose code was the primary goal.
 <table>
   <tr>
     <td>
-<img src= "./images/Screenshot_20220709-132154_Flashlight.png" width="200" height="400" />
+<img src= "./images/light_1.png" width="200" height="400"/>
     </td>
     <td>
-<img src= "./images/Screenshot_20220709-132210_Flashlight.png" width="200" height="400" />
+<img src= "./images/light_2.png" width="200" height="400"/>
     </td>
     <td>
-<img src= "./images/Screenshot_20220709-132224_Flashlight.png" width="200" height="400" />
+<img src= "./images/light_3.png" width="200" height="400"/>
     </td>
   </tr>
   <tr>
     <td>
-<img src= "./images/Screenshot_20220709-132238_Flashlight.png" width="200" height="400" />
+<img src= "./images/dark_1.png" width="200" height="400"/>
     </td>
     <td>
-<img src= "./images/Screenshot_20220709-132245_Flashlight.png" width="200" height="400" />
+<img src= "./images/dark_2.png" width="200" height="400" />
+    </td>
+  </tr>
+<tr>
+    <td>
+<img src= "./images/light_tab_1.png" width="200" height="400"/>
+    </td>
+    <td>
+<img src= "./images/light_tab_2.png" width="200" height="400" />
+    </td>
+  </tr>
+<tr>
+    <td>
+<img src= "./images/dark_tab_1.png" width="200" height="400"/>
     </td>
   </tr>
 </table>
